@@ -55,7 +55,7 @@ class NamedTupleSchema(Schema):
 
 
 class EmailSchema(NamedTupleSchema):
-    email = fields.Email(allow_none=True)
+    email = fields.String(allow_none=True)
     category = fields.String()
 
 
