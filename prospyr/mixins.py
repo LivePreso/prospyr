@@ -54,10 +54,8 @@ class Readable(object):
         Read this Resource from remote API. True on success.
         """
         logger.debug('Connected using %s', using)
-        if getattr(self, 'id', None) is None:
-            raise ValueError('%s must be saved before it is read' % self)
+        path = self._get_path()
         conn = self._get_conn(using)
-        path = self.Meta.detail_path.format(id=self.id)
         resp = conn.get(conn.build_absolute_url(path))
         if resp.status_code not in self._read_success_codes:
             raise ApiError(resp.status_code, resp.text)
@@ -65,6 +63,21 @@ class Readable(object):
         data = self._load_raw(resp.json())
         self._set_fields(data)
         return True
+
+    def _get_path(self):
+        if getattr(self, 'id', None) is None:
+            raise ValueError('%s must be saved before it is read' % self)
+        return self.Meta.detail_path.format(id=self.id)
+
+
+class Singleton(Readable):
+    """
+    Allows reading of a Resource without an id.
+    Should be mixed in with that class.
+    """
+
+    def _get_path(self):
+        return self.Meta.detail_path
 
 
 class Updateable(object):

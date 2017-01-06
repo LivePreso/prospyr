@@ -64,6 +64,7 @@ Resources
 
 The following ProsperWorks resources are supported by Prospyr:
 
+- Account (read-only)
 - Activity (read–only)
 - ActivityType
 - Company
