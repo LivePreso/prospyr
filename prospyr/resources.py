@@ -692,7 +692,7 @@ class Account(Resource, mixins.Singleton):
     id = fields.Integer()
     name = fields.String()
 
-class Webhook(Resource, mixins.Readable):
+class Webhook(Resource, mixins.Creatable, mixins.Readable, mixins.Deletable):
 
     class Meta(object):
         list_path = 'webhooks/'
@@ -705,7 +705,6 @@ class Webhook(Resource, mixins.Readable):
     event = fields.String(validate=OneOf(choices=('new', 'update', 'delete')))
     type = fields.String(validate=OneOf(choices=('lead', 'project', 'task', 'opportunity', 'company', 'person' )))
     secret = fields.Nested(schema.NamedTupleSchema, allow_none=True)
-
     date_created = Unix()
 
 class Placeholder(object):

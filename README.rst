@@ -78,7 +78,7 @@ The following ProsperWorks resources are supported by Prospyr:
 - PipelineStage (read–only)
 - Task (read–only)
 - User (read–only)
-- Webhook (read-only)
+- Webhook
 
 The following resources are not supported, but will still appear when
 referenced by the supported resources above. In this case, they come only with
