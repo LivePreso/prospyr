@@ -19,7 +19,7 @@ A Python client library for ProsperWorks.
    :target: https://pypi.python.org/pypi/prospyr/
    :alt: Prospyr on Pypi.
 
-Prospyr runs on Python 2.7 or Python 3.4+. 
+Prospyr runs on Python 2.7 or Python 3.4+.
 
 Installation
 ============
@@ -78,6 +78,7 @@ The following ProsperWorks resources are supported by Prospyr:
 - PipelineStage (read–only)
 - Task (read–only)
 - User (read–only)
+- Webhook
 
 The following resources are not supported, but will still appear when
 referenced by the supported resources above. In this case, they come only with
