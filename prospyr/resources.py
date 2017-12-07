@@ -677,9 +677,9 @@ class Lead(Resource, mixins.ReadWritable):
     tags = fields.List(fields.String)
     title = fields.String(allow_none=True)
     websites = fields.Nested(schema.WebsiteSchema, many=True)
-    # TODO custom_fields = ...
     date_created = Unix()
     date_modified = Unix()
+    custom_fields = fields.Nested(schema.CustomFieldSchema, many=True)
 
 
 class Account(Resource, mixins.Singleton):
