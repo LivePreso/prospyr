@@ -32,7 +32,7 @@ class Unix(fields.Field):
             raise ValidationError(ex)
 
 
-class Email(fields.Email):
+class Email(fields.Email):  # FIXME - returns None always
     """
     ProsperWorks emails can have leading and trailing spaces.
     """
