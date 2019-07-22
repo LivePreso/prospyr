@@ -116,7 +116,11 @@ class Updateable(object):
                 elif cf['data_type'] == TYPE_FLOAT:
                     value = float(cf['value']) if cf['value'] else None
                 elif cf['data_type'] == TYPE_DATE:
-                    value = int(cf['value']) if cf['value'] else None
+                    date_match = re.search(r'\d{2}/\d{2}/\d{4}', cf['value'])
+                    if date_match:
+                        value = date_match.group()
+                    else:
+                        value = None
                 else:
                     value = cf['value']
             else:
