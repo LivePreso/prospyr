@@ -12,6 +12,7 @@ from six import string_types, with_metaclass
 from prospyr import connection, exceptions, mixins, schema
 from prospyr.exceptions import ApiError, ProspyrException
 from prospyr.fields import NestedIdentifiedResource, NestedResource, Unix
+from prospyr.mixins import CustomFieldMixin
 from prospyr.search import ActivityTypeListSet, ListSet, ResultSet
 from prospyr.util import encode_typename, import_dotted_path, to_snake
 
@@ -19,7 +20,6 @@ logger = getLogger(__name__)
 
 
 class Manager(object):
-
     _search_cls = ResultSet
 
     def get(self, id):
@@ -155,6 +155,7 @@ class ResourceMeta(type):
 
     Pulls marshmallow schema fields onto a Schema definition.
     """
+
     class Meta(object):
         abstract = True
 
@@ -177,7 +178,7 @@ class ResourceMeta(type):
                 schema_attrs = value.modify_schema_attrs(attr, schema_attrs)
         schema_cls = type(
             encode_typename('%sSchema' % name),
-            (schema.TrimSchema, ),
+            (schema.TrimSchema,),
             schema_attrs
         )
         if 'Meta' not in attrs:
@@ -285,6 +286,7 @@ class SecondaryResource(Resource):
     """
     Secondary resources have only a list URL.
     """
+
     class Meta:
         abstract = True
 
@@ -320,12 +322,12 @@ class Related(object):
         if not isinstance(value, self.related_cls):
             raise ValueError(
                 '`{value}` must be an instance of `{cls}`'
-                .format(value=value, cls=self.related_cls)
+                    .format(value=value, cls=self.related_cls)
             )
         if not value.id:
             raise ValueError(
                 '`{value}` can\'t be assigned without an `id` attribute.'
-                .format(value=value)
+                    .format(value=value)
             )
         setattr(instance, '%s_id' % attr, value.id)
 
@@ -343,13 +345,27 @@ class Related(object):
         return schema_attrs
 
 
-class User(Resource, mixins.Readable):
+class CustomField(Resource, mixins.Readable):
+    class Meta(object):
+        list_path = 'custom_field_definitions/'
+        detail_path = 'custom_field_definitions/{id}'
 
+    id = fields.Integer()
+    name = fields.String()
+    data_type = fields.String()
+    currency = fields.String()
+    options = fields.List(fields.Dict())
+    value = fields.String(allow_none=True)
+
+    def __str__(self):
+        return "{} - {}".format(self.name, self.data_type)
+
+
+class User(Resource, mixins.Readable):
     class Meta(object):
         list_path = 'users/'
+        search_path = 'users/search/'
         detail_path = 'users/{id}/'
-
-    objects = ListOnlyManager()
 
     id = fields.Integer()
     name = fields.String(required=True)
@@ -359,8 +375,7 @@ class User(Resource, mixins.Readable):
         return '{self.name} ({self.email})'.format(self=self)
 
 
-class Company(Resource, mixins.ReadWritable):
-
+class Company(CustomFieldMixin, Resource, mixins.ReadWritable):
     class Meta(object):
         create_path = 'companies/'
         search_path = 'companies/search/'
@@ -390,12 +405,11 @@ class Company(Resource, mixins.ReadWritable):
     tags = fields.List(fields.String)
     date_created = Unix()
     date_modified = Unix()
-    # TODO custom_fields = ...
     websites = fields.Nested(schema.WebsiteSchema, many=True)
+    custom_fields = NestedResource(CustomField, many=True, schema=schema.CustomFieldSchema, custom_field=True)
 
 
-class Person(Resource, mixins.ReadWritable):
-
+class Person(CustomFieldMixin, Resource, mixins.ReadWritable):
     class Meta(object):
         create_path = 'people/'
         search_path = 'people/search/'
@@ -439,8 +453,8 @@ class Person(Resource, mixins.ReadWritable):
     title = fields.String(allow_none=True)
     date_created = Unix()
     date_modified = Unix()
-    # TODO custom_fields = ...
     websites = fields.Nested(schema.WebsiteSchema, many=True)
+    custom_fields = NestedResource(CustomField, many=True, schema=schema.CustomFieldSchema, custom_field=True)
 
 
 class LossReason(SecondaryResource, mixins.Readable):
@@ -480,7 +494,7 @@ class CustomerSource(SecondaryResource, mixins.Readable):
     name = fields.String(required=True)
 
 
-class Opportunity(Resource, mixins.ReadWritable):
+class Opportunity(CustomFieldMixin, Resource, mixins.ReadWritable):
     class Meta(object):
         create_path = 'opportunities/'
         search_path = 'opportunities/search/'
@@ -519,14 +533,15 @@ class Opportunity(Resource, mixins.ReadWritable):
         allow_none=True,
         validate=OneOf(choices=('None', 'Low', 'Medium', 'High')),
     )
-    stage = fields.String(
+    status = fields.String(
         allow_none=True,
         validate=OneOf(choices=('Open', 'Won', 'Lost', 'Abandoned')),
     )
     tags = fields.List(fields.String)
-    win_probability = fields.Integer()
+    win_probability = fields.Integer(allow_none=True)
     date_created = Unix()
     date_modified = Unix()
+    custom_fields = NestedResource(CustomField, many=True, schema=schema.CustomFieldSchema, custom_field=True)
 
 
 class ActivityType(SecondaryResource, mixins.Readable):
@@ -545,7 +560,6 @@ class ActivityType(SecondaryResource, mixins.Readable):
 
 
 class Identifier(SecondaryResource):
-
     class Meta:
         pass
 
@@ -638,7 +652,7 @@ class Task(Resource, mixins.ReadWritable):
     date_modified = Unix()
 
 
-class Lead(Resource, mixins.ReadWritable):
+class Lead(CustomFieldMixin, Resource, mixins.ReadWritable):
     class Meta:
         create_path = 'leads/'
         search_path = 'leads/search'
@@ -677,13 +691,12 @@ class Lead(Resource, mixins.ReadWritable):
     tags = fields.List(fields.String)
     title = fields.String(allow_none=True)
     websites = fields.Nested(schema.WebsiteSchema, many=True)
-    # TODO custom_fields = ...
     date_created = Unix()
     date_modified = Unix()
+    custom_fields = NestedResource(CustomField, many=True, schema=schema.CustomFieldSchema, custom_field=True)
 
 
 class Account(Resource, mixins.Singleton):
-
     objects = SingletonManager()
 
     class Meta:
@@ -694,7 +707,6 @@ class Account(Resource, mixins.Singleton):
 
 
 class Webhook(Resource, mixins.Readable):
-
     class Meta(object):
         list_path = 'webhooks/'
         detail_path = 'webhooks/{id}/'

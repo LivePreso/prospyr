@@ -21,6 +21,8 @@ from tests import load_fixture_json, make_cn_with_resp, reset_conns
 def test_create():
     # can create
     content = json.loads(load_fixture_json('person.json'))
+    # no support for creation with custom fields
+    del content['custom_fields']
     cn = make_cn_with_resp(
         method='post',
         status_code=codes.ok,

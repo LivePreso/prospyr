@@ -3,7 +3,7 @@
 from __future__ import absolute_import, print_function, unicode_literals
 
 from functools import wraps
-
+import datetime
 import arrow
 from arrow.parser import ParserError
 from marshmallow import ValidationError, fields
@@ -15,10 +15,33 @@ from prospyr.util import encode_typename, import_dotted_path
 from prospyr.validate import WhitespaceEmail
 
 
+class FieldsCache:
+    def __init__(self):
+        """Constructor"""
+        self.cache = {}
+
+    def contains(self, key):
+        """ Returns True or False depending on whether or not the key is in the cache."""
+        return key in self.cache
+
+    def get(self, key):
+        """Return value for the key."""
+        return self.cache[key]['value']
+
+    def set(self, key, value):
+        """Set key value in cache."""
+        self.cache[key] = {'date_created': datetime.datetime.now(),
+                           'value': value}
+
+
+CACHE = FieldsCache()
+
+
 class Unix(fields.Field):
     """
     datetime.datetime <-> unix timestamp
     """
+
     def _serialize(self, value, attr, obj):
         try:
             return arrow.get(value).timestamp
@@ -36,6 +59,7 @@ class Email(fields.Email):
     """
     ProsperWorks emails can have leading and trailing spaces.
     """
+
     def __init__(self, *args, **kwargs):
         super(Email, self).__init__(self, *args, **kwargs)
 
@@ -61,6 +85,7 @@ def normalise_many(fn, default=False):
     wrapped they can assume `value` is a collection. From there, (self, values,
     attr, data) makes more sense as the signature.
     """
+
     @wraps(fn)
     def wrapper(self, value, attr, data):
         many = getattr(self, 'many', default)
@@ -71,6 +96,7 @@ def normalise_many(fn, default=False):
             return res[0]
         else:
             return res
+
     return wrapper
 
 
@@ -84,11 +110,12 @@ class NestedResource(fields.Field):
     """
 
     def __init__(self, resource_cls, default=missing_, many=False,
-                 id_only=False, **kwargs):
+                 id_only=False, custom_field=False, **kwargs):
         self.resource_cls = resource_cls
         self.schema = type(resource_cls.Meta.schema)
         self.many = many
         self.id_only = id_only
+        self.custom_field = custom_field
         super(NestedResource, self).__init__(default=default, many=many,
                                              **kwargs)
 
@@ -98,6 +125,14 @@ class NestedResource(fields.Field):
         for value in values:
             if self.id_only:
                 resources.append(self.resource_cls.objects.get(id=value['id']))
+            elif self.custom_field:
+                if CACHE.contains(value['custom_field_definition_id']):
+                    resource = CACHE.get(value['custom_field_definition_id'])
+                else:
+                    resource = self.resource_cls.objects.get(id=value['custom_field_definition_id'])
+                    CACHE.set(value['custom_field_definition_id'], resource)
+                resource.value = value['value']
+                resources.append(resource)
             else:
                 resources.append(self.resource_cls.from_api_data(value))
         return resources
@@ -147,7 +182,7 @@ class NestedIdentifiedResource(fields.Field):
                 # the resource isn't modelled yet
                 from prospyr.resources import Placeholder
                 name = encode_typename(self.placeholder_types[idtype])
-                resource_cls = type(name, (Placeholder, ), {})
+                resource_cls = type(name, (Placeholder,), {})
                 resource = resource_cls(id=value['id'])
             else:
                 # modelled resource; fetch

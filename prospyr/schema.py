@@ -39,6 +39,7 @@ class NamedTupleSchema(Schema):
     """
     (De)serialise to namedtuple instead of dict
     """
+
     def __init__(self, *args, **kwargs):
         super(NamedTupleSchema, self).__init__(*args, **kwargs)
         name = type(self).__name__.replace('Schema', '')
@@ -63,7 +64,7 @@ class EmailSchema(NamedTupleSchema):
 
 class WebsiteSchema(NamedTupleSchema):
     url = fields.String()  # PW does not validate URLs so neither do we
-    category = fields.String()
+    category = fields.String(allow_none=True)
 
 
 class SocialSchema(NamedTupleSchema):
@@ -76,9 +77,15 @@ class PhoneNumberSchema(NamedTupleSchema):
     category = fields.String()
 
 
-class CustomFieldSchema(Schema):
+class CustomFieldSchema(NamedTupleSchema):
     custom_field_definition_id = fields.Integer()
-    value = fields.String()  # TODO base this on field definition
+    # value = fields.String(allow_none=True)  # TODO base this on field definition
+
+
+class CustomFieldOptionSchema(Schema):
+    id = fields.Number()
+    rank = fields.Number()
+    name = fields.String()
 
 
 class AddressSchema(Schema):

@@ -64,10 +64,6 @@
     {
       "custom_field_definition_id": 123,
       "value": "string value"
-    },
-    {
-      "custom_field_definition_id": 456,
-      "value": "06/20/2015"
     }
   ]
 }

@@ -34,6 +34,7 @@ class MockSession(object):
 
     Anything not in `urls` is 404 Not Founded.
     """
+
     def __init__(self, urls):
         self.urls = urls
 
@@ -55,9 +56,11 @@ class MockSession(object):
 @reset_conns
 def test_read():
     cn = connect(email='foo', token='bar')
-    cn.session = MockSession(urls={
-        cn.build_absolute_url('people/1/'): load_fixture_json('person.json')
-    })
+    mocked_urls = {
+        cn.build_absolute_url('people/1/'): load_fixture_json('person.json'),
+        cn.build_absolute_url('custom_field_definitions/123'): load_fixture_json('custom_fields.json')
+    }
+    cn.session = MockSession(urls=mocked_urls)
     jon = Person(id=1)
     jon.read()
     assert_is_jon(jon)
@@ -66,9 +69,11 @@ def test_read():
 @reset_conns
 def test_manager_get():
     cn = connect(email='foo', token='bar')
-    cn.session = MockSession(urls={
-        cn.build_absolute_url('people/1/'): load_fixture_json('person.json')
-    })
+    mocked_urls = {
+        cn.build_absolute_url('people/1/'): load_fixture_json('person.json'),
+        cn.build_absolute_url('custom_field_definitions/123'): load_fixture_json('custom_fields.json')  # noqa
+    }
+    cn.session = MockSession(urls=mocked_urls)
     jon = Person.objects.get(id=1)
     assert_is_jon(jon)
 
@@ -84,19 +89,23 @@ def test_no_instance_access_to_manager():
 
 
 @reset_conns
-def test_manager_connection_assignment():
-    cn_without_jon = connect(email='foo', token='bar', name='without_jon')
-    cn_with_jon = connect(email='foo', token='bar', name='with_jon')
+def test_manager_connection_assignment_with():
+    cn = connect(email='foo', token='bar')
 
-    cn_without_jon.session = MockSession(urls={})
-    cn_with_jon.session = MockSession(urls={
-        cn_with_jon.build_absolute_url('people/1/'): load_fixture_json('person.json')  # noqa
+    cn.session = MockSession(urls={
+        cn.build_absolute_url('people/1/'): load_fixture_json('person.json'),
+        cn.build_absolute_url('custom_field_definitions/123'): load_fixture_json('custom_fields.json')
     })
-
-    jon = Person.objects.use('with_jon').get(id=1)
+    jon = Person.objects.get(id=1)
     assert_is_jon(jon)
+
+
+@reset_conns
+def test_manager_connection_assignment_without():
+    cn = connect(email='foo', token='bar')
+    cn.session = MockSession(urls={})
     with assert_raises(exceptions.ApiError):
-        jon = Person.objects.use('without_jon').get(id=1)
+        jon = Person.objects.get(id=1)
 
 
 def test_resource_validation():
@@ -109,9 +118,15 @@ def test_resource_validation():
     with assert_raises(exceptions.ValidationError):
         albert.validate()
 
-
+@reset_conns
 def test_construct_from_api_data():
+    cn = connect(email='foo', token='bar')
+    cn.session = MockSession(urls={
+        cn.build_absolute_url('custom_field_definitions/123'): load_fixture_json('custom_fields.json')
+    })
+
     data = json.loads(load_fixture_json('person.json'))
+
     jon = Person.from_api_data(data)
     assert_is_jon(jon)
 
@@ -143,6 +158,7 @@ def test_str_does_not_raise():
 @reset_conns
 def test_id_or_email_required_for_person():
     cn = connect(email='foo', token='bar')
+
     cn.session = MockSession(urls={
         cn.build_absolute_url('people/1/'): load_fixture_json('person.json')
     })
@@ -153,8 +169,10 @@ def test_id_or_email_required_for_person():
 @reset_conns
 def test_get_person_by_email():
     cn = connect(email='foo', token='bar')
-    cn.session = MockSession(urls={
-        cn.build_absolute_url('people/fetch_by_email/'): load_fixture_json('person.json')  # noqa
-    })
+    mocked_urls = {
+        cn.build_absolute_url('people/fetch_by_email/'): load_fixture_json('person.json'),  # noqa
+        cn.build_absolute_url('custom_field_definitions/123'): load_fixture_json('custom_fields.json')
+    }
+    cn.session = MockSession(urls=mocked_urls)
     person = Person.objects.get(email='support@prosperworks.com')
     assert_is_jon(person)
