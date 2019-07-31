@@ -2,6 +2,7 @@
 
 from __future__ import absolute_import, print_function, unicode_literals
 
+import re
 from logging import getLogger
 from datetime import datetime
 from requests import codes

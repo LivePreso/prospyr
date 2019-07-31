@@ -538,7 +538,7 @@ class Opportunity(CustomFieldMixin, Resource, mixins.ReadWritable):
         validate=OneOf(choices=('Open', 'Won', 'Lost', 'Abandoned')),
     )
     tags = fields.List(fields.String)
-    win_probability = fields.Integer()
+    win_probability = fields.Integer(allow_none=True)
     date_created = Unix()
     date_modified = Unix()
     custom_fields = NestedResource(CustomField, many=True, schema=schema.CustomFieldSchema, custom_field=True)
